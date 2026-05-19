@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="차계부">
+<meta name="theme-color" content="#ffffff">
+<title>차계부</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #ffffff; --bg2: #f5f5f5; --bg3: #eeeeee;
+    --text: #111111; --text2: #555555; --text3: #999999;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.2);
+    --blue: #2563eb; --blue-bg: #eff6ff; --blue-text: #1d4ed8;
+    --green: #16a34a; --green-bg: #f0fdf4; --green-text: #15803d;
+    --red: #dc2626; --red-bg: #fef2f2; --red-text: #b91c1c;
+    --radius: 10px; --radius-lg: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111111; --bg2: #1c1c1c; --bg3: #262626;
+      --text: #f0f0f0; --text2: #aaaaaa; --text3: #666666;
+      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+      --blue-bg: #1e3a5f; --blue-text: #93c5fd;
+      --green-bg: #14532d; --green-text: #86efac;
+      --red-bg: #450a0a; --red-text: #fca5a5;
+    }
+  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; font-size: 15px; }
+  .app { max-width: 480px; margin: 0 auto; min-height: 100vh; position: relative; }
+  .header { padding: 16px 16px 12px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 8px; position: sticky; top: 0; background: var(--bg); z-index: 10; }
+  .header h1 { font-size: 18px; font-weight: 600; }
+  .content { padding: 12px 12px 90px; }
+  .tab-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; display: flex; border-top: 0.5px solid var(--border); background: var(--bg); z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
+  .tab-btn { flex: 1; padding: 10px 4px 8px; border: none; background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--text3); font-size: 10px; font-family: inherit; }
+  .tab-btn.active { color: var(--blue); }
+  .tab-btn i { font-size: 22px; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+  .stat-card { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; }
+  .stat-card .label { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+  .stat-card .value { font-size: 19px; font-weight: 600; }
+  .stat-card.full { grid-column: span 2; }
+  .expense-color { color: var(--red); }
+  .refund-color { color: var(--green); }
+  .net-color { color: var(--blue); }
+
+  .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px; margin-bottom: 10px; }
+  .card-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; color: var(--text2); }
+
+  .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .month-nav .month-label { font-size: 16px; font-weight: 600; }
+  .month-nav button { width: 36px; height: 36px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg2); cursor: pointer; font-size: 18px; color: var(--text2); display: flex; align-items: center; justify-content: center; }
+
+  .form-group { margin-bottom: 10px; }
+  .form-group label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 5px; font-weight: 500; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; border: 0.5px solid var(--border2); border-radius: var(--radius);
+    padding: 10px 12px; font-size: 15px; font-family: inherit;
+    background: var(--bg); color: var(--text); outline: none;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--blue); }
+  .form-group textarea { height: 70px; resize: none; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  .type-toggle { display: flex; gap: 6px; margin-bottom: 14px; }
+  .type-btn { flex: 1; padding: 10px; border: 0.5px solid var(--border); border-radius: var(--radius); background: var(--bg2); cursor: pointer; font-size: 14px; font-family: inherit; color: var(--text2); display: flex; align-items: center; justify-content: center; gap: 5px; font-weight: 500; }
+  .type-btn.active-expense { background: var(--red-bg); color: var(--red-text); border-color: var(--red); }
+  .type-btn.active-refund { background: var(--green-bg); color: var(--green-text); border-color: var(--green); }
+
+  .btn-primary { width: 100%; padding: 13px; background: var(--blue); color: #fff; border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .btn-secondary { padding: 8px 14px; background: var(--bg2); border: 0.5px solid var(--border2); border-radius: var(--radius); font-size: 13px; cursor: pointer; color: var(--text2); font-family: inherit; display: inline-flex; align-items: center; gap: 4px; }
+  .btn-danger-sm { padding: 6px 10px; background: var(--red-bg); border: 0.5px solid var(--red); border-radius: 8px; font-size: 12px; cursor: pointer; color: var(--red-text); font-family: inherit; }
+
+  .record-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 11px 0; border-bottom: 0.5px solid var(--border); }
+  .record-item:last-child { border-bottom: none; }
+  .record-info .name { font-size: 14px; font-weight: 500; }
+  .record-info .meta { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .record-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .record-amount { font-size: 15px; font-weight: 600; }
+  .record-date { font-size: 11px; color: var(--text3); }
+
+  .chart-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+  .chart-bar-label { font-size: 12px; color: var(--text2); width: 64px; text-align: right; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chart-bar-wrap { flex: 1; background: var(--bg3); border-radius: 4px; height: 24px; overflow: hidden; }
+  .chart-bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 7px; font-size: 11px; font-weight: 600; color: #fff; transition: width 0.4s ease; }
+  .chart-bar-val { font-size: 11px; color: var(--text2); width: 60px; flex-shrink: 0; text-align: right; }
+
+  .cat-tag { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 20px; font-size: 13px; background: var(--bg2); border: 0.5px solid var(--border); margin: 3px; }
+  .cat-del { cursor: pointer; color: var(--text3); line-height: 1; }
+  .cat-section-title { font-size: 12px; color: var(--text2); margin: 12px 0 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .add-cat-row { display: flex; gap: 6px; margin-top: 8px; }
+  .add-cat-row input { flex: 1; border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 8px 12px; font-size: 14px; background: var(--bg); color: var(--text); font-family: inherit; outline: none; }
+
+  .filter-row { display: flex; gap: 6px; margin-bottom: 10px; }
+  .filter-row select { flex: 1; border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 9px 10px; font-size: 14px; background: var(--bg); color: var(--text); font-family: inherit; }
+
+  .empty { text-align: center; padding: 36px 16px; color: var(--text3); font-size: 13px; }
+  .empty i { font-size: 44px; display: block; margin-bottom: 10px; }
+
+  .toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: #111; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; z-index: 999; opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <i class="ti ti-car" style="font-size:22px;color:var(--blue)"></i>
+    <h1>차계부</h1>
+  </div>
+
+  <div class="content">
+    <!-- 홈 -->
+    <div class="section active" id="sec-home">
+      <div class="month-nav">
+        <button onclick="changeMonth(-1)"><i class="ti ti-chevron-left"></i></button>
+        <span class="month-label" id="monthLabel"></span>
+        <button onclick="changeMonth(1)"><i class="ti ti-chevron-right"></i></button>
+      </div>
+      <div class="summary-grid">
+        <div class="stat-card"><div class="label">총 지출</div><div class="value expense-color" id="sumExpense">₩0</div></div>
+        <div class="stat-card"><div class="label">총 환급</div><div class="value refund-color" id="sumRefund">₩0</div></div>
+        <div class="stat-card full"><div class="label">순 지출</div><div class="value net-color" id="sumNet">₩0</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="ti ti-chart-bar"></i> 카테고리별 지출</div>
+        <div id="chartHome"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="ti ti-clock"></i> 최근 내역</div>
+        <div id="recentList"></div>
+      </div>
+    </div>
+
+    <!-- 기록 -->
+    <div class="section" id="sec-add">
+      <div class="card">
+        <div class="type-toggle">
+          <button class="type-btn active-expense" id="btnExpense" onclick="setType('expense')"><i class="ti ti-trending-down"></i> 지출</button>
+          <button class="type-btn" id="btnRefund" onclick="setType('refund')"><i class="ti ti-trending-up"></i> 환급</button>
+        </div>
+        <div class="form-group"><label>날짜</label><input type="date" id="inputDate"></div>
+        <div class="form-group"><label>카테고리</label><select id="inputCat"></select></div>
+        <div class="form-group"><label>금액 (원)</label><input type="number" id="inputAmount" placeholder="0" inputmode="numeric"></div>
+        <div id="fuelFields">
+          <div class="form-row">
+            <div class="form-group"><label>주유량 (L)</label><input type="number" id="inputLiter" placeholder="0.0" step="0.1" inputmode="decimal"></div>
+            <div class="form-group"><label>주행거리 (km)</label><input type="number" id="inputOdo" placeholder="0" inputmode="numeric"></div>
+          </div>
+          <div class="form-group"><label>주유소명</label><input type="text" id="inputStation" placeholder="주유소 이름"></div>
+        </div>
+        <div class="form-group"><label>메모</label><textarea id="inputMemo" placeholder="메모 (선택사항)"></textarea></div>
+        <button class="btn-primary" onclick="addRecord()"><i class="ti ti-plus"></i> 기록 추가</button>
+      </div>
+    </div>
+
+    <!-- 내역 -->
+    <div class="section" id="sec-list">
+      <div class="filter-row">
+        <select id="filterMonth" onchange="renderList()"></select>
+        <select id="filterType" onchange="renderList()">
+          <option value="">전체</option>
+          <option value="expense">지출</option>
+          <option value="refund">환급</option>
+        </select>
+      </div>
+      <div id="recordList"></div>
+    </div>
+
+    <!-- 통계 -->
+    <div class="section" id="sec-stat">
+      <div class="month-nav">
+        <button onclick="changeMonth(-1)"><i class="ti ti-chevron-left"></i></button>
+        <span class="month-label" id="statMonthLabel"></span>
+        <button onclick="changeMonth(1)"><i class="ti ti-chevron-right"></i></button>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="ti ti-chart-bar"></i> 월별 지출 추이 (최근 6개월)</div>
+        <div id="monthlyChart"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="ti ti-chart-pie"></i> 이번 달 카테고리 비율</div>
+        <div id="catChart"></div>
+      </div>
+    </div>
+
+    <!-- 설정 -->
+    <div class="section" id="sec-setting">
+      <div class="card">
+        <div class="card-title"><i class="ti ti-tag"></i> 카테고리 관리</div>
+        <div class="cat-section-title">지출 카테고리</div>
+        <div id="expenseCatList"></div>
+        <div class="add-cat-row">
+          <input type="text" id="newExpenseCat" placeholder="새 지출 카테고리">
+          <button class="btn-secondary" onclick="addCat('expense')"><i class="ti ti-plus"></i> 추가</button>
+        </div>
+        <div class="cat-section-title" style="margin-top:16px">환급 카테고리</div>
+        <div id="refundCatList"></div>
+        <div class="add-cat-row">
+          <input type="text" id="newRefundCat" placeholder="새 환급 카테고리">
+          <button class="btn-secondary" onclick="addCat('refund')"><i class="ti ti-plus"></i> 추가</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="ti ti-database"></i> 데이터</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-secondary" onclick="exportCSV()"><i class="ti ti-download"></i> CSV 내보내기</button>
+          <button class="btn-danger-sm" onclick="clearAll()"><i class="ti ti-trash"></i> 전체 삭제</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="ti ti-info-circle"></i> 앱 정보</div>
+        <p style="font-size:13px;color:var(--text2);line-height:1.6">차계부 v1.0<br>데이터는 이 기기에 저장됩니다.<br>홈 화면에 추가하면 앱처럼 사용 가능합니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <nav class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('home',this)"><i class="ti ti-home"></i>홈</button>
+    <button class="tab-btn" onclick="showTab('add',this)"><i class="ti ti-plus-circle"></i>기록</button>
+    <button class="tab-btn" onclick="showTab('list',this)"><i class="ti ti-list"></i>내역</button>
+    <button class="tab-btn" onclick="showTab('stat',this)"><i class="ti ti-chart-bar"></i>통계</button>
+    <button class="tab-btn" onclick="showTab('setting',this)"><i class="ti ti-settings"></i>설정</button>
+  </nav>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'carbook_v1';
+const CAT_KEY = 'carbook_cats_v1';
+
+let state = {
+  records: [],
+  cats: {
+    expense: ['주유','보험','세금','정비/수리','통행료','기타'],
+    refund: ['출장비 정산','더치페이','기타 환급']
+  },
+  currentMonth: new Date().toISOString().slice(0,7),
+  addType: 'expense'
+};
+
+function load() {
+  try {
+    const r = localStorage.getItem(STORAGE_KEY);
+    const c = localStorage.getItem(CAT_KEY);
+    if (r) state.records = JSON.parse(r);
+    if (c) state.cats = JSON.parse(c);
+  } catch(e) {}
+}
+
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
+    localStorage.setItem(CAT_KEY, JSON.stringify(state.cats));
+  } catch(e) {}
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function fmt(n) { return '₩' + Math.round(n).toLocaleString('ko-KR'); }
+
+function fmtMonth(ym) {
+  const [y,m] = ym.split('-');
+  return y + '년 ' + parseInt(m) + '월';
+}
+
+function showTab(name, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'home') renderHome();
+  if (name === 'list') { initFilterMonths(); renderList(); }
+  if (name === 'stat') renderStat();
+  if (name === 'setting') renderCats();
+  if (name === 'add') refreshCatSelect();
+}
+
+function changeMonth(d) {
+  const [y, m] = state.currentMonth.split('-').map(Number);
+  const dt = new Date(y, m - 1 + d, 1);
+  state.currentMonth = dt.toISOString().slice(0,7);
+  renderHome();
+  renderStat();
+}
+
+function getMonthRecords(ym) {
+  return state.records.filter(r => r.date.startsWith(ym));
+}
+
+function renderBarChart(elId, bycat, total) {
+  const el = document.getElementById(elId);
+  if (!total) { el.innerHTML = '<div class="empty" style="padding:16px 0"><i class="ti ti-chart-bar" style="font-size:28px;display:block;margin-bottom:6px"></i>데이터 없음</div>'; return; }
+  const colors = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2777','#65a30d'];
+  const sorted = Object.entries(bycat).sort((a,b)=>b[1]-a[1]);
+  el.innerHTML = sorted.map(([cat, val], i) => {
+    const pct = Math.round(val / total * 100);
+    return `<div class="chart-bar-row">
+      <div class="chart-bar-label">${cat}</div>
+      <div class="chart-bar-wrap">
+        <div class="chart-bar-fill" style="width:${pct}%;background:${colors[i%colors.length]}">${pct > 12 ? pct + '%' : ''}</div>
+      </div>
+      <div class="chart-bar-val">${fmt(val)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderHome() {
+  const ym = state.currentMonth;
+  document.getElementById('monthLabel').textContent = fmtMonth(ym);
+  document.getElementById('statMonthLabel').textContent = fmtMonth(ym);
+  const recs = getMonthRecords(ym);
+  const totalExpense = recs.filter(r=>r.type==='expense').reduce((s,r)=>s+r.amount,0);
+  const totalRefund = recs.filter(r=>r.type==='refund').reduce((s,r)=>s+r.amount,0);
+  document.getElementById('sumExpense').textContent = fmt(totalExpense);
+  document.getElementById('sumRefund').textContent = fmt(totalRefund);
+  document.getElementById('sumNet').textContent = fmt(totalExpense - totalRefund);
+
+  const bycat = {};
+  recs.filter(r=>r.type==='expense').forEach(r => { bycat[r.cat] = (bycat[r.cat]||0) + r.amount; });
+  renderBarChart('chartHome', bycat, totalExpense);
+
+  const recent = [...state.records].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  const el = document.getElementById('recentList');
+  if (!recent.length) { el.innerHTML = '<div class="empty"><i class="ti ti-receipt-off"></i>기록이 없습니다</div>'; return; }
+  el.innerHTML = recent.map(r => `
+    <div class="record-item">
+      <div class="record-info">
+        <div class="name">${r.cat}</div>
+        <div class="meta">${r.memo || (r.station ? r.station : '')}</div>
+      </div>
+      <div class="record-right">
+        <div class="record-amount ${r.type === 'refund' ? 'refund-color' : 'expense-color'}">${r.type==='refund'?'+':'−'}${fmt(r.amount)}</div>
+        <div class="record-date">${r.date}</div>
+      </div>
+    </div>`).join('');
+}
+
+function initFilterMonths() {
+  const sel = document.getElementById('filterMonth');
+  const months = new Set(state.records.map(r=>r.date.slice(0,7)));
+  months.add(state.currentMonth);
+  const sorted = [...months].sort().reverse();
+  sel.innerHTML = '<option value="">전체 기간</option>' + sorted.map(m=>`<option value="${m}">${fmtMonth(m)}</option>`).join('');
+}
+
+function renderList() {
+  const filterMonth = document.getElementById('filterMonth').value;
+  const filterType = document.getElementById('filterType').value;
+  let recs = [...state.records];
+  if (filterMonth) recs = recs.filter(r=>r.date.startsWith(filterMonth));
+  if (filterType) recs = recs.filter(r=>r.type===filterType);
+  recs.sort((a,b)=>b.date.localeCompare(a.date));
+  const el = document.getElementById('recordList');
+  if (!recs.length) { el.innerHTML = '<div class="empty"><i class="ti ti-receipt-off"></i>내역이 없습니다</div>'; return; }
+  el.innerHTML = recs.map(r => `
+    <div class="card" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:14px">${r.cat}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${r.date}${r.memo?' · '+r.memo:''}</div>
+          ${r.liter ? `<div style="font-size:12px;color:var(--text3);margin-top:2px">${r.liter}L${r.odo?' · '+r.odo+'km':''}${r.station?' · '+r.station:''}</div>` : ''}
+        </div>
+        <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+          <div class="${r.type==='refund'?'refund-color':'expense-color'}" style="font-size:15px;font-weight:600">${r.type==='refund'?'+':'−'}${fmt(r.amount)}</div>
+          <button class="btn-danger-sm" onclick="deleteRecord(${r.id})"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function renderStat() {
+  document.getElementById('statMonthLabel').textContent = fmtMonth(state.currentMonth);
+  const months = [];
+  for(let i=5;i>=0;i--) {
+    const [y,m] = state.currentMonth.split('-').map(Number);
+    const dt = new Date(y, m-1-i, 1);
+    months.push(dt.toISOString().slice(0,7));
+  }
+  const monthly = months.map(ym => ({
+    ym,
+    expense: getMonthRecords(ym).filter(r=>r.type==='expense').reduce((s,r)=>s+r.amount,0)
+  }));
+  const maxVal = Math.max(...monthly.map(m=>m.expense), 1);
+  document.getElementById('monthlyChart').innerHTML = monthly.map(m=>{
+    const pct = Math.round(m.expense/maxVal*100);
+    const lbl = parseInt(m.ym.slice(5))+'월';
+    return `<div class="chart-bar-row">
+      <div class="chart-bar-label">${lbl}</div>
+      <div class="chart-bar-wrap"><div class="chart-bar-fill" style="width:${pct}%;background:#2563eb">${pct>15?fmt(m.expense):''}</div></div>
+      <div class="chart-bar-val">${fmt(m.expense)}</div>
+    </div>`;
+  }).join('');
+
+  const recs = getMonthRecords(state.currentMonth);
+  const bycat = {};
+  recs.filter(r=>r.type==='expense').forEach(r=>{ bycat[r.cat]=(bycat[r.cat]||0)+r.amount; });
+  const total = Object.values(bycat).reduce((s,v)=>s+v,0);
+  renderBarChart('catChart', bycat, total);
+}
+
+function renderCats() {
+  ['expense','refund'].forEach(type => {
+    const el = document.getElementById(type+'CatList');
+    el.innerHTML = state.cats[type].map(c=>`
+      <span class="cat-tag">${c}
+        <span class="cat-del" onclick="deleteCat('${type}','${encodeURIComponent(c)}')"><i class="ti ti-x" style="font-size:12px"></i></span>
+      </span>`).join('');
+  });
+}
+
+function addCat(type) {
+  const inp = document.getElementById('new' + (type==='expense'?'Expense':'Refund') + 'Cat');
+  const val = inp.value.trim();
+  if (!val) return;
+  if (state.cats[type].includes(val)) { showToast('이미 있는 카테고리입니다'); return; }
+  state.cats[type].push(val);
+  save(); inp.value = '';
+  renderCats(); refreshCatSelect();
+  showToast('카테고리가 추가되었습니다');
+}
+
+function deleteCat(type, encodedCat) {
+  const cat = decodeURIComponent(encodedCat);
+  if (!confirm(`'${cat}' 카테고리를 삭제할까요?`)) return;
+  state.cats[type] = state.cats[type].filter(c=>c!==cat);
+  save(); renderCats(); refreshCatSelect();
+}
+
+function setType(type) {
+  state.addType = type;
+  document.getElementById('btnExpense').className = 'type-btn' + (type==='expense'?' active-expense':'');
+  document.getElementById('btnRefund').className = 'type-btn' + (type==='refund'?' active-refund':'');
+  document.getElementById('fuelFields').style.display = (type==='expense') ? 'block' : 'none';
+  refreshCatSelect();
+}
+
+function refreshCatSelect() {
+  const sel = document.getElementById('inputCat');
+  sel.innerHTML = state.cats[state.addType].map(c=>`<option value="${c}">${c}</option>`).join('');
+  const cat = sel.value;
+  document.getElementById('fuelFields').style.display = (state.addType==='expense' && cat==='주유') ? 'block' : 'none';
+  sel.onchange = () => {
+    document.getElementById('fuelFields').style.display = (state.addType==='expense' && sel.value==='주유') ? 'block' : 'none';
+  };
+}
+
+function addRecord() {
+  const date = document.getElementById('inputDate').value;
+  const cat = document.getElementById('inputCat').value;
+  const amount = parseFloat(document.getElementById('inputAmount').value);
+  if (!date || !cat || !amount || amount <= 0) { showToast('날짜, 카테고리, 금액을 입력해주세요'); return; }
+  const rec = { id: Date.now(), type: state.addType, date, cat, amount, memo: document.getElementById('inputMemo').value.trim() };
+  if (state.addType === 'expense' && cat === '주유') {
+    rec.liter = parseFloat(document.getElementById('inputLiter').value) || null;
+    rec.odo = parseFloat(document.getElementById('inputOdo').value) || null;
+    rec.station = document.getElementById('inputStation').value.trim() || null;
+  }
+  state.records.push(rec);
+  save();
+  ['inputAmount','inputMemo','inputLiter','inputOdo','inputStation'].forEach(id => { document.getElementById(id).value = ''; });
+  showToast('기록이 추가되었습니다 ✓');
+  renderHome();
+}
+
+function deleteRecord(id) {
+  if (!confirm('이 기록을 삭제할까요?')) return;
+  state.records = state.records.filter(r=>r.id!==id);
+  save(); renderList();
+  showToast('삭제되었습니다');
+}
+
+function clearAll() {
+  if (!confirm('모든 기록을 삭제할까요?\n되돌릴 수 없습니다.')) return;
+  state.records = []; save(); renderHome();
+  showToast('전체 삭제되었습니다');
+}
+
+function exportCSV() {
+  const rows = [['날짜','유형','카테고리','금액','주유량(L)','주행거리(km)','주유소','메모']];
+  state.records.sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>{
+    rows.push([r.date, r.type==='expense'?'지출':'환급', r.cat, r.amount, r.liter||'', r.odo||'', r.station||'', r.memo||'']);
+  });
+  const csv = '\uFEFF' + rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = '차계부_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  showToast('CSV 내보내기 완료');
+}
+
+load();
+document.getElementById('inputDate').value = new Date().toISOString().slice(0,10);
+setType('expense');
+refreshCatSelect();
+renderHome();
+initFilterMonths();
+</script>
+</body>
+</html>
